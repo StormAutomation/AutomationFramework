@@ -124,6 +124,57 @@ both ways of calling API's use the ApiResponse object which can be found at src/
 
 the getObject method will be if you have an object that you want the json response mapped to. so if you have a class 'MyResponse' that maps to the response you get back from the api call, then the code would look like this `MyResponse myResponse = apiResponse.getObject(MyResponse.class);`
 
+### Email Testing ###
+
+need to create an email account for testing with gmail. When email is created change these settings:
+
+* enable imap in settings -> https://support.google.com/mail/answer/7126229?hl=en
+* allow less secure apps -> https://myaccount.google.com/lesssecureapps?pli=1
+
+add the username and password for the email account in src/main/resources/default.properties
+set the property 'realEmaillAddress' to the email address created with google and 'realEmailPassword' to the password for that email.
+
+### Utilities - Email Client ###
+need to import the utilities email package
+```
+import utilities.email;
+```
+
+retrieve emails from the email api client. file is located at src/main/java/utilities/email/EmailApi.java. object has the following methods:
+
+* EmailMessage[] EmailApi.emailClient.getEmails(10, 20);
+* int EmailApi.emailClient().getEmailCount();
+* boolean EmailApi.emailClient().waitForEmail();
+* boolean EmailApi.emailClient().waitForEmail("subject");
+* EmailMessage EmailApi.emailClient().getEmail(1);
+* EmailMessage EmailApi.emailClient().getEmail("subject");
+* EmailMessage EmailApi.emailClient().getMostRecentEmail();
+* EmailMessage[] EmailApi.emailClient().getRecentEmails();
+* EmailMessage[] EmailApi.emailClient().getRecentEmails(15);
+
+### Utilities - Email Message ###
+
+When you get a message from the email client it returns the message as EmailMessage object, file for this is at src/main/java/utilities/email/EmailApi.java
+
+EmailMessage is used to get information from an individual email, EmailMessage has the following methods:
+
+* javax.mail.Message emailMessage.getRawMessage();
+* emailMessage.markEmailAsRead();
+* emailMessage.markEmailAsUnread();
+* emailMessage.deleteEmail();
+* String emailMessage.getSubject();
+* String emailMessage.getBody();
+* List<String> emailMessage.getAttachments();
+* String[] emailMessage.getFrom();
+* String[] emailMessage.getRecipients();
+* String[] emailMessage.getReplyTo();
+* Date emailMessage.getSentDate();
+* Date emailMessage.getReceivedDate();
+* int emailMessage.getMessageNumber();
+* boolean emailMessage.bodyContains("text");
+* boolean emailMessage.attachmentContains("text");
+* boolean emailMessage.hasAttachment();
+
 ### utlities - DataGenerator ###
 The DataGenerator is for when you need data for your test and you want it to be random. This will generate random data so it will be unique data everytime you call one of the methods. available methods to generated data are: 
 

@@ -1,6 +1,8 @@
 package utilities.api;
 
 import utilities.StormLog;
+import utilities.StormProperties;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -12,7 +14,9 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,6 +26,8 @@ import java.util.HashMap;
 public class Call {
 
     private static HttpClientContext context;
+    private static CloseableHttpClient httpClient;
+    private static final int threadMax = Integer.valueOf(StormProperties.getProperty("absoluteApiThreadMax"));
 
     // HTTP DELETE request
     public static ApiResponse delete(String url, HashMap<String, String> headers) {
@@ -118,9 +124,9 @@ public class Call {
         if (context == null) {
             context = HttpClientContext.create();
         }
-        try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+        try {
             //send the request
-            HttpResponse response = httpClient.execute(request, context);
+            HttpResponse response = getHttpClient().execute(request, context);
 
             //save response
             responseCode = response.getStatusLine().getStatusCode();
@@ -136,8 +142,19 @@ public class Call {
         } catch (IOException e) {
             StormLog.info("API request failed", Call.class);
             e.printStackTrace();
+        } finally {
+            request.releaseConnection();
         }
         return ApiResponse.create(responseCode, fullResponse.toString());
     }
 
+    private static CloseableHttpClient getHttpClient() {
+        if (httpClient == null) {
+            PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+            connectionManager.setMaxTotal(200);
+            connectionManager.setDefaultMaxPerRoute(threadMax);
+            httpClient = HttpClients.custom().setConnectionManager(connectionManager).build();
+        }
+        return httpClient;
+    }
 }

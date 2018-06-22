@@ -1,5 +1,9 @@
 package utilities;
 
+import org.apache.commons.io.FileUtils;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.util.function.BooleanSupplier;
 
 public class StormUtils {
@@ -23,11 +27,29 @@ public class StormUtils {
     }
 
     static public boolean waitForTrue(BooleanSupplier evaluate, int maxSeconds) {
+        return waitForTrue(evaluate, maxSeconds, 500);
+    }
+    
+    static public boolean waitForTrue(BooleanSupplier evaluate, int maxSeconds, int sleepTime) {
         StormLog.info("waiting for statement to be true, waiting for a max of " + maxSeconds + " seconds", StormUtils.class);
-        maxSeconds *= 2;
-        while (!evaluate.getAsBoolean() && --maxSeconds >= 0) {
-            sleep(500);
+        maxSeconds = (int) (((float)maxSeconds) / (((float)sleepTime)/1000));
+        boolean result;
+        while (!(result = evaluate.getAsBoolean()) && --maxSeconds >= 0) {
+            sleep(sleepTime);
         }
-        return evaluate.getAsBoolean();
+        return result;
+    }
+    
+    static public File getResourceAsFile(String fileName) {
+        File file = new File(fileName);
+        URL resource = StormUtils.class.getClassLoader().getResource(fileName);
+        try {
+            FileUtils.copyURLToFile(resource, file);
+        } catch (IOException e) {
+            StormLog.error(e, StormUtils.class);
+            e.printStackTrace();
+        }
+
+        return file;
     }
 }

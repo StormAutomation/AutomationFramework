@@ -4,12 +4,18 @@ import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 import org.testng.TestNG;
+import org.monte.media.Format;
+import org.monte.media.FormatKeys;
+import org.monte.media.math.Rational;
+import org.monte.screenrecorder.ScreenRecorder;
 import utilities.StormLog;
 import utilities.StormProperties;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.awt.*;
+import static org.monte.media.FormatKeys.*;
+import static org.monte.media.VideoFormatKeys.*;
 
 public class Main {
 
@@ -17,14 +23,7 @@ public class Main {
         String path = getFullPath(args[0]);
         StormLog.disableDebugLogging();
 
-        switch (StormProperties.getProperty("runParallel").toLowerCase()) {
-            case "class":
-                args[0] = createTestXmlFileClass(path);
-                break;
-            case "method":
-                args[0] = createTestXmlFileMethod(path);
-                break;
-        }
+        args[0] = createTestXmlFileMethod(path);
 
         StormLog.enableDebugLogging();
 
@@ -90,6 +89,8 @@ public class Main {
 
 class TestListener implements ITestListener {
 
+    ScreenRecorder screenRecorder;
+    
     @Override
     public void onTestStart(ITestResult iTestResult) {
     }
@@ -116,10 +117,44 @@ class TestListener implements ITestListener {
 
     @Override
     public void onStart(ITestContext iTestContext) {
+        try {
+            //Create a instance of GraphicsConfiguration to get the Graphics configuration
+            //of the Screen. This is needed for ScreenRecorder class.
+            GraphicsConfiguration gc = GraphicsEnvironment
+                    .getLocalGraphicsEnvironment()
+                    .getDefaultScreenDevice()
+                    .getDefaultConfiguration();
+
+            //Create a instance of ScreenRecorder with the required configurations
+            screenRecorder = new ScreenRecorder(gc, null,
+                    new Format(MediaTypeKey, MediaType.FILE, MimeTypeKey, MIME_AVI),
+                    new Format(MediaTypeKey, FormatKeys.MediaType.VIDEO, EncodingKey, ENCODING_AVI_TECHSMITH_SCREEN_CAPTURE,
+                            CompressorNameKey, ENCODING_AVI_TECHSMITH_SCREEN_CAPTURE,
+                            DepthKey, 24, FrameRateKey, Rational.valueOf(15),
+                            QualityKey, 1.0f,
+                            KeyFrameIntervalKey, (15 * 60)),
+                    new Format(MediaTypeKey, MediaType.VIDEO, EncodingKey,"black",
+                            FrameRateKey, Rational.valueOf(1)),
+                    null,
+                    new File("."));
+            screenRecorder.start();
+        } catch (IOException | AWTException | HeadlessException e) {
+            StormLog.error(e, getClass());
+            e.printStackTrace();
+        }
 
     }
 
     @Override
     public void onFinish(ITestContext iTestContext) {
+        if (screenRecorder != null) {
+            try {
+                screenRecorder.stop();
+            } catch (IOException e) {
+                StormLog.error(e, getClass());
+                e.printStackTrace();
+            }
+        }
+
     }
 }
